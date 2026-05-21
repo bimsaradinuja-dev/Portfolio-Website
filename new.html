@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    <title>Document</title>
+</head>
+<body style="padding: ;">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bv:        #2C1F5E;
+      --bv-mid:    #3D2B82;
+      --bv-light:  #5B44B0;
+      --bv-glow:   #7B65CC;
+      --bv-soft:   #EAE6FA;
+      --white:     #FFFFFF;
+      --offwhite:  #F7F6FD;
+      --text-dark: #1A1230;
+      --text-muted:#7A6FA8;
+      --radius:    18px;
+    }
+
+    
+
+   
+    .demo-hint {
+      position: fixed;
+      top: 28px; left: 50%;
+      transform: translateX(-50%);
+      background: var(--bv);
+      color: rgba(255,255,255,0.85);
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      letter-spacing: 0.4px;
+      padding: 10px 22px;
+      border-radius: 40px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #chatBubble {
+      position: fixed;
+      bottom: 28px; right: 28px;
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--bv), var(--bv-light));
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 28px rgba(44,31,94,0.45);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    #chatBubble:hover {
+      transform: scale(1.08);
+      box-shadow: 0 12px 36px rgba(44,31,94,0.55);
+    }
+    #chatBubble:active { transform: scale(0.96); }
+
+    #chatBubble svg { width: 26px; height: 26px; fill: #fff; transition: transform 0.25s; }
+    #chatBubble.open svg.icon-chat { display: none; }
+    #chatBubble.open svg.icon-close { display: block !important; }
+    #chatBubble svg.icon-close { display: none; }
+
+    .bubble-badge {
+      position: absolute;
+      top: 4px; right: 4px;
+      width: 14px; height: 14px;
+      background: #6EE7B7;
+      border-radius: 50%;
+      border: 2px solid var(--white);
+      animation: pulse 2.2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(110,231,183,0.5); }
+      50%      { box-shadow: 0 0 0 6px rgba(110,231,183,0); }
+    }
+
+   
+    #chatPanel {
+      position: fixed;
+      bottom: 100px; right: 28px;
+      width: 370px;
+      height: 560px;
+      border-radius: var(--radius);
+      background: var(--white);
+      border: 1.5px solid rgba(91,68,176,0.2);
+      box-shadow: 0 20px 60px rgba(44,31,94,0.25);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      z-index: 9998;
+      transform: scale(0.85) translateY(20px);
+      opacity: 0;
+      pointer-events: none;
+      transform-origin: bottom right;
+      transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s ease;
+    }
+    #chatPanel.visible {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+      pointer-events: all;
+    }
+
+
+    .ch-header {
+      background: linear-gradient(135deg, var(--bv) 0%, var(--bv-mid) 55%, var(--bv-light) 100%);
+      padding: 16px 18px 14px;
+      display: flex; align-items: center; gap: 12px;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .ch-header::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--bv-glow), transparent);
+    }
+    .logo-ring {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.13);
+      border: 1.5px solid rgba(255,255,255,0.28);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 12px;
+      color: #fff; letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+    .header-text h2 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 14.5px;
+      color: #fff; letter-spacing: 0.3px;
+    }
+    .header-text p {
+      font-size: 11px;
+      color: rgba(255,255,255,0.62);
+      margin-top: 1px;
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #6EE7B7;
+      margin-left: auto;
+      flex-shrink: 0;
+      animation: pulse 2s infinite;
+    }
+
+    .ch-messages {
+      flex: 1; overflow-y: auto;
+      padding: 18px 14px;
+      display: flex; flex-direction: column; gap: 13px;
+      background: var(--offwhite);
+      scroll-behavior: smooth;
+    }
+    .ch-messages::-webkit-scrollbar { width: 3px; }
+    .ch-messages::-webkit-scrollbar-thumb { background: rgba(91,68,176,0.18); border-radius: 4px; }
+
+    .msg { display: flex; gap: 8px; align-items: flex-end; max-width: 90%; }
+    .msg.bot { align-self: flex-start; }
+    .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+
+    .bot-av {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--bv), var(--bv-light));
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 8.5px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+
+    .bubble {
+      padding: 9px 13px;
+      border-radius: 16px;
+      font-size: 13px; line-height: 1.55;
+    }
+    .msg.bot .bubble {
+      background: var(--white);
+      color: var(--text-dark);
+      border-radius: 4px 16px 16px 16px;
+      border: 0.5px solid rgba(91,68,176,0.1);
+    }
+    .msg.user .bubble {
+      background: linear-gradient(135deg, var(--bv-mid), var(--bv-light));
+      color: #fff;
+      border-radius: 16px 4px 16px 16px;
+    }
+
+    .quick-btns {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-top: 4px; padding-left: 34px;
+    }
+    .qbtn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11.5px;
+      color: var(--bv-light);
+      background: rgba(91,68,176,0.07);
+      border: 0.5px solid rgba(91,68,176,0.22);
+      border-radius: 20px;
+      padding: 5px 11px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .qbtn:hover { background: var(--bv); color: #fff; border-color: var(--bv); }
+
+    /* Typing */
+    .typing-wrap {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .typing-dots {
+      display: flex; align-items: center; gap: 4px;
+      padding: 9px 13px;
+      background: var(--white);
+      border-radius: 4px 16px 16px 16px;
+      border: 0.5px solid rgba(91,68,176,0.1);
+    }
+    .tdot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--bv-glow);
+      animation: tdot 1.2s infinite;
+    }
+    .tdot:nth-child(2) { animation-delay: 0.2s; }
+    .tdot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes tdot {
+      0%,60%,100% { transform: translateY(0); }
+      30%          { transform: translateY(-5px); }
+    }
+
+    /* Input area */
+    .ch-input-area {
+      padding: 12px 14px 14px;
+      background: var(--white);
+      border-top: 0.5px solid rgba(91,68,176,0.09);
+      display: flex; gap: 9px; align-items: flex-end;
+      flex-shrink: 0;
+    }
+    .ch-input-area textarea {
+      flex: 1;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      color: var(--text-dark);
+      background: var(--offwhite);
+      border: 1px solid rgba(91,68,176,0.15);
+      border-radius: 11px;
+      padding: 9px 12px;
+      resize: none; outline: none;
+      max-height: 90px; line-height: 1.5;
+      transition: border-color 0.15s;
+    }
+    .ch-input-area textarea::placeholder { color: var(--text-muted); }
+    .ch-input-area textarea:focus { border-color: var(--bv-light); }
+
+    .send-btn {
+      width: 38px; height: 38px;
+      border-radius: 11px;
+      background: linear-gradient(135deg, var(--bv), var(--bv-light));
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: transform 0.1s, opacity 0.1s;
+    }
+    .send-btn:hover  { opacity: 0.88; transform: scale(1.05); }
+    .send-btn:active { transform: scale(0.95); }
+    .send-btn svg { width: 17px; height: 17px; fill: #fff; }
+
+    /* Footer */
+    .ch-footer {
+      text-align: center;
+      padding: 5px 0 9px;
+      font-size: 10.5px;
+      color: var(--text-muted);
+      background: var(--white);
+      flex-shrink: 0;
+    }
+    .ch-footer a { color: var(--bv-light); text-decoration: none; }
+    .ch-footer a:hover { text-decoration: underline; }
+
+    /* Fade-in for new messages */
+    .fade-in { animation: fadeIn 0.28s ease forwards; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 480px) {
+      #chatPanel {
+        bottom: 0; right: 0;
+        width: 100%; height: 100%;
+        border-radius: 0;
+        border: none;
+      }
+      #chatBubble { bottom: 20px; right: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+
+  <!-- ── Floating Bubble Button ── -->
+  <button id="chatBubble" onclick="toggleChat()" aria-label="Open Flooter Designs chat">
+    <!-- Chat icon -->
+    <svg class="icon-chat" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+    </svg>
+    <!-- Close icon -->
+    <svg class="icon-close" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+    </svg>
+    <span class="bubble-badge"></span>
+  </button>
+
+  <!-- ── Chat Panel ── -->
+  <div id="chatPanel" role="dialog" aria-label="Flooter Designs Chatbot">
+
+    <div class="ch-header">
+      <div class="logo-ring">FD</div>
+      <div class="header-text">
+        <h2>Flooter Designs</h2>
+        <p>Game Dev · Product Animation</p>
+      </div>
+      <div class="status-dot"></div>
+    </div>
+
+    <div class="ch-messages" id="chatBox">
+      <div class="msg bot fade-in">
+        <div class="bot-av">FD</div>
+        <div>
+          <div class="bubble">
+            Hey there! 👾 Welcome to <strong>Flooter Designs</strong>!<br>
+            I'm here to help with our game development &amp; product animation services. What can I do for you today?
+          </div>
+        </div>
+      </div>
+      <div class="quick-btns" id="quickBtns">
+        <button class="qbtn" onclick="sendQuick('Tell me about your game development services')">🎮 Game Dev</button>
+        <button class="qbtn" onclick="sendQuick('What product animation services do you offer?')">🎬 Animation</button>
+        <button class="qbtn" onclick="sendQuick('How can I get a quote?')">💬 Get a Quote</button>
+        <button class="qbtn" onclick="sendQuick('How do I contact you?')">📧 Contact</button>
+      </div>
+    </div>
+
+    <div class="ch-input-area">
+      <textarea
+        id="userInput"
+        rows="1"
+        placeholder="Type your message…"
+        onkeydown="handleKey(event)"
+        oninput="autoResize(this)"
+        aria-label="Chat input"
+      ></textarea>
+      <button class="send-btn" onclick="sendMessage()" aria-label="Send">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="ch-footer">
+      Powered by <a href="mailto:flooterdesigns@gmail.com">Flooter Designs</a> &nbsp;·&nbsp;
+      <a href="mailto:flooterdesigns@gmail.com">flooterdesigns@gmail.com</a>
+    </div>
+
+  </div>
+
+  <script>
+    /* ── Toggle panel ── */
+    function toggleChat() {
+      const panel  = document.getElementById('chatPanel');
+      const bubble = document.getElementById('chatBubble');
+      const isOpen = panel.classList.contains('visible');
+      panel.classList.toggle('visible', !isOpen);
+      bubble.classList.toggle('open', !isOpen);
+      if (!isOpen) {
+        setTimeout(() => document.getElementById('userInput').focus(), 300);
+      }
+    }
+
+    /* ── Claude system prompt ── */
+    const SYSTEM = `You are a friendly, concise customer support chatbot for Flooter Designs — a creative studio specializing in game development and product animation.
+
+Company details:
+- Name: Flooter Designs
+- Services:
+  • Game Development — mobile games, PC games, indie game design, game prototyping, UI/UX for games
+  • Product Animation — 3D product renders, explainer animations, motion graphics, brand animations, cinematic trailers
+- Theme: Creative, modern, professional with a playful edge
+- Contact email: flooterdesigns@gmail.com
+
+Tone: Friendly, enthusiastic, concise, professional. Use short paragraphs (max 3 sentences each). Keep replies under 80 words unless the user explicitly asks for details. If asked about pricing or timelines, say it varies per project scope and invite them to email flooterdesigns@gmail.com for a custom quote. Always end with a helpful follow-up offer or question.`;
+
+    let history = [];
+
+    /* ── API call ── */
+    async function callClaude(userMsg) {
+      history.push({ role: 'user', content: userMsg });
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: SYSTEM,
+          messages: history
+        })
+      });
+      const data = await res.json();
+      const reply = (data.content || []).map(b => b.text || '').join('') ||
+                    "Oops! Something went wrong. Please email us at flooterdesigns@gmail.com 🙂";
+      history.push({ role: 'assistant', content: reply });
+      return reply;
+    }
+
+    /* ── Helpers ── */
+    function autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 90) + 'px';
+    }
+
+    function handleKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    }
+
+    function scrollBottom() {
+      const box = document.getElementById('chatBox');
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function addMsg(html, role) {
+      const box  = document.getElementById('chatBox');
+      const wrap = document.createElement('div');
+      wrap.className = `msg ${role} fade-in`;
+      if (role === 'bot') {
+        wrap.innerHTML = `<div class="bot-av">FD</div><div><div class="bubble">${html}</div></div>`;
+      } else {
+        wrap.innerHTML = `<div class="bubble">${html}</div>`;
+      }
+      box.appendChild(wrap);
+      scrollBottom();
+    }
+
+    function showTyping() {
+      const box = document.getElementById('chatBox');
+      const el  = document.createElement('div');
+      el.className = 'msg bot fade-in';
+      el.id = 'typing';
+      el.innerHTML = `<div class="bot-av">FD</div><div class="typing-dots"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>`;
+      box.appendChild(el);
+      scrollBottom();
+    }
+
+    function removeTyping() {
+      const el = document.getElementById('typing');
+      if (el) el.remove();
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    }
+
+    async function sendMessage() {
+      const inp = document.getElementById('userInput');
+      const txt = inp.value.trim();
+      if (!txt) return;
+
+      inp.value = '';
+      inp.style.height = 'auto';
+
+      const qb = document.getElementById('quickBtns');
+      if (qb) qb.remove();
+
+      addMsg(escapeHtml(txt), 'user');
+      showTyping();
+
+      try {
+        const reply = await callClaude(txt);
+        removeTyping();
+        addMsg(escapeHtml(reply).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'), 'bot');
+      } catch (err) {
+        removeTyping();
+        addMsg('Sorry, something went wrong! Please reach out at <a href="mailto:flooterdesigns@gmail.com" style="color:var(--bv-light)">flooterdesigns@gmail.com</a> 🙂', 'bot');
+      }
+    }
+
+    function sendQuick(text) {
+      document.getElementById('userInput').value = text;
+      sendMessage();
+    }
+  </script>
+</body>
+</html>
+    
+</body>
+</html>
